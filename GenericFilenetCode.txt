@@ -1,0 +1,90 @@
+package com.icn.plugin.util;
+
+import filenet.vw.api.VWException;
+import filenet.vw.api.VWFetchType;
+import filenet.vw.api.VWRoster;
+import filenet.vw.api.VWRosterQuery;
+import filenet.vw.api.VWSession;
+import filenet.vw.api.VWWorkObject;
+
+public class PEWIDUnlockUtil {
+
+	public String unlockVWWorkObjects(VWSession peSession,String rosterName) throws Exception{
+	      VWWorkObject vwwObj=null;
+	      String response="Activities Unlocked Successfully";
+	      try{
+	     
+	     
+	          VWRoster roster=peSession.getRoster(rosterName);
+	          int queryFlags=VWRoster.QUERY_NO_OPTIONS;
+	          /*String abc = "abc";
+	          String filter="Property_Name ="+abc;*/
+	          String filter=null;
+
+	          //Change filter based on requirement
+	       
+	          VWRosterQuery query=roster.createQuery(null, null, null, queryFlags, filter, null, VWFetchType.FETCH_TYPE_WORKOBJECT);
+	          System.out.println("Total records for Work ITem: "+query.fetchCount());
+	         // VWWorkObject[] workObjects=query.fetchWorkObjects(100);
+	         
+	          while(query.hasNext()){
+	              vwwObj=(VWWorkObject) query.next();
+	              int lockStatus=vwwObj.fetchLockedStatus();
+	              //If locked by user then unlock it
+	              if(lockStatus==1){
+	            	  vwwObj.doSave(true);
+	              }
+	          }
+	         
+	      }catch(VWException vwe){
+	    	   response="Error while Unlocking Activities at rosterName roaster "+vwe.getMessage();
+	    	  System.out.println("Exception found at PEManager.getVWWorkObject():" + vwe.getMessage());
+	    	  
+	      }catch(Exception vwe){
+	    	  response="Error while Unlocking Activities at rosterName roaster "+vwe.getMessage();
+	    	  System.out.println("Exception found at PEManager.getVWWorkObject():"  + vwe.getMessage());
+	      }
+	     
+	      return response;
+	  }
+	
+}
+
+
+
+package com.icn.plugin;
+
+import javax.servlet.http.HttpServletRequest;
+
+import javax.servlet.http.HttpServletResponse;
+
+import com.ibm.ecm.extension.PluginService;
+import com.ibm.ecm.extension.PluginServiceCallbacks;
+import com.icn.plugin.util.PEWIDUnlockUtil;
+
+import filenet.vw.api.VWSession;
+
+public class MyPluginSerice extends PluginService {
+
+	@Override
+	public void execute(PluginServiceCallbacks arg0, HttpServletRequest arg1, HttpServletResponse arg2)
+			throws Exception {
+		// TODO Auto-generated method stub
+		String roasterName=arg1.getParameter("RoasterName");
+		System.out.println("roasterName>> "+roasterName);
+		System.out.println("repoId>> "+arg0.getRepositoryId());
+		VWSession vs=arg0.getVWSession(arg0.getRepositoryId(), null);
+		System.out.println("VWSession>> "+vs);
+		String response=new PEWIDUnlockUtil().unlockVWWorkObjects(vs, roasterName);
+		
+		
+		
+	}
+
+	@Override
+	public String getId() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}
